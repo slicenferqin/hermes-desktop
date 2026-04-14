@@ -1,91 +1,110 @@
 # Hermes Desktop
 
-Hermes Agent 的桌面客户端，基于 Tauri v2 + React + TypeScript 构建。
+Hermes Desktop is a Tauri-based desktop client for Hermes Agent.
 
-## 技术栈
+It turns Hermes' CLI-first workflow into a native desktop experience with:
 
-- **前端框架**: React 18
-- **语言**: TypeScript
-- **构建工具**: Vite
-- **桌面框架**: Tauri v2
-- **样式**: Tailwind CSS
-- **路由**: React Router v6
+- chat-first conversation UI
+- onboarding and environment checks
+- channel management
+- skill management
+- scheduled task management
+- preference-style settings
 
-## 项目结构
+The current product direction is intentionally not "AI workbench" or "control center".  
+The goal is a calmer desktop client where conversation stays primary, and system complexity appears only when needed.
 
-```
-hermes-desktop/
-├── src/                    # 前端源码
-│   ├── App.tsx            # 主应用组件
-│   ├── main.tsx           # 入口文件
-│   ├── pages/             # 页面组件
-│   │   ├── Chat.tsx       # 对话页面
-│   │   ├── Channels.tsx   # 渠道配置
-│   │   ├── Skills.tsx     # 技能管理
-│   │   ├── Tasks.tsx      # 定时任务
-│   │   └── Settings.tsx   # 设置页面
-│   ├── components/        # 通用组件
-│   │   └── Layout.tsx     # 底部导航布局
-│   ├── hooks/             # 自定义 Hooks
-│   ├── utils/             # 工具函数
-│   └── styles/            # 样式文件
-├── src-tauri/             # Tauri 后端
-│   ├── src/
-│   │   ├── main.rs        # Rust 入口
-│   │   └── lib.rs         # 库文件
-│   ├── Cargo.toml         # Rust 依赖
-│   ├── tauri.conf.json    # Tauri 配置
-│   └── icons/             # 应用图标
-└── package.json           # Node.js 依赖
-```
+## Current Status
 
-## 开发指南
+This repository is already runnable and includes real Hermes integration through the Tauri backend.
 
-### 环境要求
+Implemented:
+
+- Hermes installation and environment detection
+- desktop chat shell with session loading
+- channel configuration UI, including embedded WeChat QR flow
+- skill inventory and enable/disable management
+- cron task management
+- settings shell backed by real Hermes config snapshot reads/writes
+
+Still being refined:
+
+- settings page depth for custom providers and model discovery
+- more complete bilingual support
+- finer interaction polish across chat artifacts, task states, and management pages
+
+## Stack
+
+- Tauri v2
+- React 18
+- TypeScript
+- Vite
+- Tailwind CSS
+
+## Run Locally
+
+### Requirements
 
 - Node.js 18+
-- Rust 1.73+
+- Rust toolchain
+- Hermes Agent installed and available in your login shell
 
-### 安装依赖
+### Install
 
 ```bash
 npm install
 ```
 
-### 开发模式
+### Start Desktop App
 
 ```bash
 npm run tauri dev
 ```
 
-### 构建应用
+### Start Frontend Only
 
 ```bash
+npm run dev
+```
+
+### Production Build
+
+```bash
+npm run build
 npm run tauri build
 ```
 
-## 功能规划
+## Project Structure
 
-### P0 - 核心功能
-- [x] 安装向导
-- [x] 对话界面
-- [ ] 模型配置
-- [ ] Gateway 管理
-- [ ] 消息渠道配置
+```text
+src/
+  components/         Shared UI components
+  hooks/              Runtime and app hooks
+  lib/                Shared helpers
+  pages/              Chat, channels, skills, tasks, settings
+  styles/             Global theme and component styles
+src-tauri/
+  src/                Tauri Rust backend
+  icons/              App icons
+docs/plans/           Product and UI planning documents
+ui/                   High-fidelity static reference explorations
+```
 
-### P1 - 增强功能
-- [ ] 技能管理
-- [ ] 定时任务
-- [ ] 记忆系统
+## Product Notes
 
-### P2 - 扩展功能
-- [ ] MCP 管理
-- [ ] 插件管理
-- [ ] 主题设置
+The current UI direction is documented in:
 
-## 设计理念
+- `docs/plans/2026-04-14-desktop-page-requirements-reset.md`
+- `docs/plans/2026-04-14-settings-page-reset-requirements.md`
 
-参考 Linear、Notion、Raycast 等现代应用的设计语言，追求：
-- 简洁美观
-- 年轻活力
-- 中文优先
+These documents define the current product judgment:
+
+- chat-first
+- simple-first
+- desktop-client-first
+- real-capability-first
+
+## Open Source Notes
+
+This project is under active product and UI iteration.  
+Expect visible changes in naming, information architecture, and interaction details as the desktop client continues to stabilize.
