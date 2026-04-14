@@ -1,39 +1,40 @@
 # Hermes Desktop
 
-Hermes Desktop is a Tauri-based desktop client for Hermes Agent.
+Hermes Desktop 是一个基于 Tauri 构建的 Hermes Agent 桌面客户端。
 
-It turns Hermes' CLI-first workflow into a native desktop experience with:
+它把 Hermes 原本偏 CLI 的使用方式，整理成一个更适合日常使用的桌面端体验，当前已经覆盖这些核心能力：
 
-- chat-first conversation UI
-- onboarding and environment checks
-- channel management
-- skill management
-- scheduled task management
-- preference-style settings
+- 对话优先的聊天界面
+- 启动引导与环境检查
+- 渠道管理
+- 技能管理
+- 定时任务管理
+- 桌面客户端风格的设置页
 
-The current product direction is intentionally not "AI workbench" or "control center".  
-The goal is a calmer desktop client where conversation stays primary, and system complexity appears only when needed.
+这个项目当前的产品方向很明确：  
+它不是一个 AI workbench，也不是一个控制台或管理后台，而是一个更安静、更克制的桌面客户端。聊天保持主入口，复杂能力只在需要时露出。
 
-## Current Status
+## 当前状态
 
-This repository is already runnable and includes real Hermes integration through the Tauri backend.
+仓库已经可以直接运行，并且不是纯静态壳子，前后端已经接上了真实的 Hermes 能力。
 
-Implemented:
+目前已完成：
 
-- Hermes installation and environment detection
-- desktop chat shell with session loading
-- channel configuration UI, including embedded WeChat QR flow
-- skill inventory and enable/disable management
-- cron task management
-- settings shell backed by real Hermes config snapshot reads/writes
+- Hermes 安装与环境检测
+- 会话加载与基础聊天能力
+- 渠道配置界面，包含微信内嵌二维码接入流程
+- 技能库存读取、启用/禁用与安装管理
+- 定时任务列表、新建与调度状态展示
+- 基于 Hermes 配置快照的设置页读写能力
 
-Still being refined:
+目前仍在继续打磨：
 
-- settings page depth for custom providers and model discovery
-- more complete bilingual support
-- finer interaction polish across chat artifacts, task states, and management pages
+- 模型设置页中更完整的 custom provider / model discovery
+- 更完整的中英文支持
+- 聊天产物、任务状态、管理页之间的交互细节
+- 开源发布所需的截图、图标、License 与仓库门面整理
 
-## Stack
+## 技术栈
 
 - Tauri v2
 - React 18
@@ -41,70 +42,70 @@ Still being refined:
 - Vite
 - Tailwind CSS
 
-## Run Locally
+## 本地运行
 
-### Requirements
+### 环境要求
 
 - Node.js 18+
 - Rust toolchain
-- Hermes Agent installed and available in your login shell
+- 本机已安装 Hermes Agent，并且在登录 shell 环境中可用
 
-### Install
+### 安装依赖
 
 ```bash
 npm install
 ```
 
-### Start Desktop App
+### 启动桌面应用
 
 ```bash
 npm run tauri dev
 ```
 
-### Start Frontend Only
+### 仅启动前端开发服务
 
 ```bash
 npm run dev
 ```
 
-### Production Build
+### 生产构建
 
 ```bash
 npm run build
 npm run tauri build
 ```
 
-## Project Structure
+## 目录结构
 
 ```text
 src/
-  components/         Shared UI components
-  hooks/              Runtime and app hooks
-  lib/                Shared helpers
-  pages/              Chat, channels, skills, tasks, settings
-  styles/             Global theme and component styles
+  components/         通用 UI 组件
+  hooks/              运行态与状态管理 hooks
+  lib/                公共工具函数
+  pages/              对话、渠道、技能、任务、设置
+  styles/             全局主题与样式
 src-tauri/
-  src/                Tauri Rust backend
-  icons/              App icons
-docs/plans/           Product and UI planning documents
-ui/                   High-fidelity static reference explorations
+  src/                Tauri Rust 后端
+  icons/              应用图标
+docs/plans/           产品与 UI 规划文档
+ui/                   高保真静态参考稿
 ```
 
-## Product Notes
+## 产品文档
 
-The current UI direction is documented in:
+当前这版桌面客户端的页面与产品方向，主要收敛在下面两份文档：
 
 - `docs/plans/2026-04-14-desktop-page-requirements-reset.md`
 - `docs/plans/2026-04-14-settings-page-reset-requirements.md`
 
-These documents define the current product judgment:
+对应的核心判断是：
 
-- chat-first
-- simple-first
-- desktop-client-first
-- real-capability-first
+- Chat-first
+- Simple-first
+- Desktop-client-first
+- Real-capability-first
 
-## Open Source Notes
+## 开源说明
 
-This project is under active product and UI iteration.  
-Expect visible changes in naming, information architecture, and interaction details as the desktop client continues to stabilize.
+这个项目还处在持续迭代阶段。  
+接下来仓库里仍然会继续发生较明显的变化，包括命名、页面结构、交互细节、截图素材和开源资料整理。
