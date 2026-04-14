@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hermes Desktop Preferences</title>
+  <style>
+    :root {
+      --bg: #ece9e3;
+      --window: #f7f7f8;
+      --sidebar: #f1f2f4;
+      --surface: #ffffff;
+      --surface-2: #fafbfc;
+      --line: rgba(17, 24, 39, 0.08);
+      --line-strong: rgba(17, 24, 39, 0.13);
+      --text: #1f2937;
+      --text-2: #667085;
+      --text-3: #98a2b3;
+      --accent: #2f6fed;
+      --accent-soft: rgba(47, 111, 237, 0.11);
+      --orange: #e66a35;
+      --success: #5d7f66;
+      --success-soft: rgba(93, 127, 102, 0.12);
+      --warn: #ab7b34;
+      --warn-soft: rgba(171, 123, 52, 0.14);
+      --shadow-window: 0 24px 64px rgba(24, 28, 36, 0.08);
+      --shadow-panel: 0 1px 2px rgba(24, 28, 36, 0.04), 0 8px 18px rgba(24, 28, 36, 0.03);
+      --radius-window: 22px;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 10px;
+      --app-width: 196px;
+      --settings-width: 230px;
+      --objects-width: 292px;
+      --font: "SF Pro Text", "Inter", "PingFang SC", "Noto Sans SC", sans-serif;
+      --mono: "SF Mono", "JetBrains Mono", "Menlo", monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: var(--font);
+      background:
+        radial-gradient(circle at top left, rgba(230, 106, 53, 0.18), transparent 26%),
+        linear-gradient(180deg, #f2efea 0%, #e9e5df 100%);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+    }
+
+    button, input, select, textarea { font: inherit; color: inherit; }
+    button { border: none; background: none; cursor: pointer; }
+
+    .window {
+      width: min(1680px, calc(100vw - 32px));
+      height: min(960px, calc(100vh - 32px));
+      margin: 16px auto;
+      background: rgba(247, 247, 248, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.75);
+      border-radius: var(--radius-window);
+      box-shadow: var(--shadow-window);
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: var(--app-width) var(--settings-width) var(--objects-width) minmax(0, 1fr);
+    }
+
+    .col { min-width: 0; min-height: 0; }
+    .app-nav, .settings-nav, .objects { border-right: 1px solid var(--line); }
+    .app-nav, .settings-nav, .objects, .detail { background: rgba(247, 247, 248, 0.76); }
+
+    .app-nav { padding: 14px 12px; display: flex; flex-direction: column; gap: 6px; }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 8px 10px 14px; border-bottom: 1px solid var(--line); margin-bottom: 6px; }
+    .brand-mark {
+      width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
+      background: linear-gradient(135deg, #ef8a53, #de6230); color: white; font-weight: 700; font-size: 15px;
+    }
+    .brand strong { display: block; font-size: 14px; font-weight: 650; letter-spacing: -0.01em; }
+    .brand span { display: block; margin-top: 2px; font-size: 11px; color: var(--text-2); }
+
+    .nav-item, .settings-item, .object-item {
+      display: flex; align-items: flex-start; gap: 10px; width: 100%; text-align: left;
+      padding: 11px 12px; border-radius: 13px; transition: 0.16s ease; color: var(--text-2);
+    }
+    .nav-item:hover, .settings-item:hover, .object-item:hover { background: rgba(0,0,0,0.03); }
+    .nav-item.active, .settings-item.active, .object-item.active {
+      background: white; box-shadow: var(--shadow-panel); color: var(--text);
+    }
+    .nav-item.active, .settings-item.active .item-icon, .object-item.active .item-icon { color: var(--accent); }
+    .item-icon {
+      width: 32px; height: 32px; border-radius: 10px; background: rgba(0,0,0,0.04);
+      display: grid; place-items: center; font-size: 14px; flex: 0 0 auto;
+    }
+    .settings-item.active .item-icon, .object-item.active .item-icon { background: var(--accent-soft); }
+    .nav-item strong, .settings-item strong, .object-item strong {
+      display: block; font-size: 13px; font-weight: 620; color: var(--text); letter-spacing: -0.01em;
+    }
+    .nav-item span.meta, .settings-item span.meta, .object-item span.meta {
+      display: block; margin-top: 4px; font-size: 11px; color: var(--text-2); line-height: 1.45;
+    }
+
+    .runtime-box {
+      margin-top: auto; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,0.58);
+      padding: 12px;
+    }
+    .runtime-box h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--text-3); }
+    .runtime-box strong { display: block; margin-top: 8px; font-size: 14px; font-weight: 640; }
+    .runtime-box p { margin-top: 6px; font-size: 12px; color: var(--text-2); line-height: 1.5; }
+
+    .settings-nav { padding: 16px 10px; overflow: auto; }
+    .pane-title { padding: 0 10px 14px; }
+    .pane-title h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--text-3); font-weight: 700; }
+    .pane-title p { margin-top: 8px; font-size: 12px; color: var(--text-2); line-height: 1.55; }
+    .search {
+      width: calc(100% - 20px); margin: 0 10px 12px; height: 36px; padding: 0 14px; border-radius: 999px;
+      border: 1px solid var(--line-strong); background: rgba(255,255,255,0.72); outline: none; font-size: 13px;
+    }
+    .search:focus { border-color: rgba(47,111,237,0.3); box-shadow: 0 0 0 4px rgba(47,111,237,0.08); }
+
+    .objects { display: flex; flex-direction: column; min-height: 0; }
+    .objects-head { padding: 16px 16px 12px; border-bottom: 1px solid var(--line); }
+    .objects-head h3 { font-size: 15px; font-weight: 650; letter-spacing: -0.01em; }
+    .objects-head p { margin-top: 6px; font-size: 12px; color: var(--text-2); line-height: 1.55; }
+    .segmented { margin-top: 12px; display: inline-flex; background: rgba(0,0,0,0.045); padding: 4px; border-radius: 999px; }
+    .segmented button {
+      height: 30px; padding: 0 12px; border-radius: 999px; font-size: 12px; font-weight: 620; color: var(--text-2);
+    }
+    .segmented button.active { background: white; color: var(--text); box-shadow: var(--shadow-panel); }
+    .objects-list-wrap { flex: 1; min-height: 0; overflow: auto; padding: 10px; }
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    .detail { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+    .detail-topbar {
+      height: 56px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,0.52);
+      display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 18px;
+    }
+    .detail-topbar strong { font-size: 15px; font-weight: 650; letter-spacing: -0.01em; }
+    .detail-topbar .actions { display: flex; gap: 8px; }
+
+    .btn {
+      height: 34px; padding: 0 12px; border-radius: 10px; border: 1px solid transparent;
+      font-size: 12px; font-weight: 620; transition: 0.16s ease;
+    }
+    .btn.secondary { background: rgba(255,255,255,0.72); border-color: var(--line); color: var(--text); }
+    .btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+    .btn.primary:hover { background: var(--accent-hover); }
+
+    .detail-header { padding: 20px 22px 16px; border-bottom: 1px solid var(--line); }
+    .detail-header small { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--text-3); font-weight: 700; }
+    .detail-header h3 { margin-top: 8px; font-size: 28px; font-weight: 700; letter-spacing: -0.04em; line-height: 1.04; }
+    .detail-header p { margin-top: 10px; max-width: 760px; font-size: 13px; line-height: 1.7; color: var(--text-2); }
+    .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .badge {
+      display: inline-flex; align-items: center; justify-content: center; min-height: 28px; padding: 0 10px;
+      border-radius: 999px; font-size: 12px; font-weight: 620; border: 1px solid transparent;
+    }
+    .badge.success { background: var(--success-soft); color: var(--success); border-color: rgba(91,126,99,0.14); }
+    .badge.warning { background: var(--warn-soft); color: var(--warn); border-color: rgba(175,122,49,0.16); }
+    .badge.info { background: var(--accent-soft); color: var(--accent); border-color: rgba(47,111,237,0.16); }
+
+    .detail-scroll { flex: 1; min-height: 0; overflow: auto; padding: 18px 22px 24px; }
+    .group {
+      border: 1px solid var(--line); border-radius: 16px; background: rgba(255,255,255,0.76);
+      box-shadow: var(--shadow-panel); overflow: hidden;
+    }
+    .group + .group { margin-top: 14px; }
+    .group-head { padding: 14px 16px; border-bottom: 1px solid var(--line); background: rgba(252,251,248,0.92); }
+    .group-head h4 { font-size: 15px; font-weight: 650; letter-spacing: -0.01em; }
+    .group-head p { margin-top: 5px; font-size: 12px; color: var(--text-2); line-height: 1.55; }
+
+    .row { display: grid; grid-template-columns: 220px minmax(0,1fr); gap: 16px; padding: 14px 16px; align-items: start; }
+    .row + .row { border-top: 1px solid var(--line); }
+    .row-label strong { display: block; font-size: 13px; font-weight: 620; letter-spacing: -0.01em; }
+    .row-label span { display: block; margin-top: 5px; font-size: 12px; color: var(--text-2); line-height: 1.5; }
+
+    .input, .select, .textarea {
+      width: 100%; border-radius: 12px; border: 1px solid var(--line-strong); background: white;
+      padding: 10px 12px; outline: none; font-size: 13px; transition: 0.16s ease;
+    }
+    .textarea { min-height: 112px; resize: vertical; line-height: 1.7; font-family: var(--font); }
+    .input:focus, .select:focus, .textarea:focus {
+      border-color: rgba(47,111,237,0.32); box-shadow: 0 0 0 4px rgba(47,111,237,0.08);
+    }
+
+    .inline-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .token-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .token {
+      height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line);
+      background: var(--bg-panel-alt); color: var(--text-2); font-size: 12px; font-weight: 620;
+      display: inline-flex; align-items: center;
+    }
+    .token.active { background: white; color: var(--accent); border-color: rgba(47,111,237,0.18); box-shadow: var(--shadow-panel); }
+
+    .note { font-size: 12px; color: var(--text-2); line-height: 1.6; }
+    .provider-list { display: flex; flex-direction: column; gap: 8px; }
+    .provider-card { border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,0.88); padding: 12px; }
+    .provider-card.featured { background: rgba(47,111,237,0.06); border-color: rgba(47,111,237,0.16); }
+    .provider-card h5 { font-size: 13px; font-weight: 640; letter-spacing: -0.01em; }
+    .provider-card p { margin-top: 6px; font-size: 12px; color: var(--text-2); line-height: 1.55; }
+    .provider-card .badges { margin-top: 8px; }
+
+    @media (max-width: 1400px) {
+      .window { grid-template-columns: var(--app-nav-width) var(--prefs-nav-width) 260px minmax(0,1fr); }
+    }
+
+    @media (max-width: 1200px) {
+      .window { grid-template-columns: var(--prefs-nav-width) var(--master-width) minmax(0,1fr); }
+      .app-nav { display: none; }
+      .row { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 980px) {
+      .window { grid-template-columns: 1fr; width: 100vw; height: 100vh; margin: 0; border-radius: 0; }
+      .prefs-nav, .master { border-right: none; border-bottom: 1px solid var(--line); }
+      .inline-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="window">
+    <aside class="col app-nav">
+      <div class="brand">
+        <div class="brand-mark">H</div>
+        <div>
+          <strong>Hermes Desktop</strong>
+          <span>偏好设置</span>
+        </div>
+      </div>
+
+      <button class="nav-item"><span class="item-icon">💬</span><span>对话</span></button>
+      <button class="nav-item"><span class="item-icon">🌐</span><span>渠道</span></button>
+      <button class="nav-item"><span class="item-icon">✨</span><span>技能</span></button>
+      <button class="nav-item"><span class="item-icon">⏰</span><span>任务</span></button>
+      <button class="nav-item active"><span class="item-icon">⚙️</span><span>设置</span></button>
+    </aside>
+
+    <aside class="col prefs-nav">
+      <div class="prefs-toolbar">
+        <h1>设置</h1>
+        <input class="search" placeholder="搜索设置" />
+      </div>
+
+      <div class="prefs-sections">
+        <button class="prefs-item">
+          <span class="item-icon">⚙️</span>
+          <span>
+            <strong>通用</strong>
+            <span class="meta">主题、窗口、基础行为</span>
+          </span>
+        </button>
+        <button class="prefs-item">
+          <span class="item-icon">✨</span>
+          <span>
+            <strong>助手</strong>
+            <span class="meta">人格、系统策略、SOUL</span>
+          </span>
+        </button>
+        <button class="prefs-item active">
+          <span class="item-icon">🧭</span>
+          <span>
+            <strong>模型与路由</strong>
+            <span class="meta">Provider、Coding Plan、自定义接口</span>
+          </span>
+        </button>
+        <button class="prefs-item">
+          <span class="item-icon">🎙️</span>
+          <span>
+            <strong>语音与记忆</strong>
+            <span class="meta">STT、TTS、长期记忆</span>
+          </span>
+        </button>
+        <button class="prefs-item">
+          <span class="item-icon">🧾</span>
+          <span>
+            <strong>高级</strong>
+            <span class="meta">config.yaml、诊断、原始编辑</span>
+          </span>
+        </button>
+      </div>
+
+      <div class="runtime-box">
+        <h4>Runtime</h4>
+        <strong>Hermes 已就绪</strong>
+        <p>Gateway 运行中，配置来自 <span class="mono">~/.hermes/config.yaml</span>。</p>
+      </div>
+    </aside>
+
+    <aside class="col master">
+      <div class="master-header">
+        <h2>配置对象</h2>
+        <p>先选“任务路由”还是 “Provider”，再选具体对象。</p>
+        <div class="segmented">
+          <button class="active" data-screen="routes">任务路由</button>
+          <button data-screen="providers">Provider</button>
+        </div>
+      </div>
+
+      <div class="master-list">
+        <div class="screen active" id="screen-routes">
+          <button class="master-item active" data-route="build">
+            <span class="bubble">🛠️</span>
+            <span>
+              <strong>Build Plan</strong>
+              <span class="meta">代码实现、patch、重构与交付</span>
+            </span>
+          </button>
+          <button class="master-item" data-route="debug">
+            <span class="bubble">🐞</span>
+            <span>
+              <strong>Debug</strong>
+              <span class="meta">日志分析、根因定位、问题复现</span>
+            </span>
+          </button>
+          <button class="master-item" data-route="review">
+            <span class="bubble">🔍</span>
+            <span>
+              <strong>Code Review</strong>
+              <span class="meta">风险、回归、测试缺口与安全性</span>
+            </span>
+          </button>
+          <button class="master-item" data-route="planning">
+            <span class="bubble">🧠</span>
+            <span>
+              <strong>Planning</strong>
+              <span class="meta">规格拆解、方案文档、执行计划</span>
+            </span>
+          </button>
+          <button class="master-item" data-route="research">
+            <span class="bubble">📚</span>
+            <span>
+              <strong>Deep Research</strong>
+              <span class="meta">长文阅读、网页提取、背景归纳</span>
+            </span>
+          </button>
+          <button class="master-item" data-route="aux">
+            <span class="bubble">⚡</span>
+            <span>
+              <strong>Auxiliary</strong>
+              <span class="meta">Vision、Compression、Delegate 等</span>
+            </span>
+          </button>
+        </div>
+
+        <div class="screen hidden" id="screen-providers">
+          <button class="master-item active" data-provider="dmx">
+            <span class="bubble">🟦</span>
+            <span>
+              <strong>DMX API / Coding</strong>
+              <span class="meta">自定义 OpenAI-compatible 接口</span>
+            </span>
+          </button>
+          <button class="master-item" data-provider="openai">
+            <span class="bubble">🟢</span>
+            <span>
+              <strong>OpenAI Official</strong>
+              <span class="meta">官方 API / project</span>
+            </span>
+          </button>
+          <button class="master-item" data-provider="anthropic">
+            <span class="bubble">🟣</span>
+            <span>
+              <strong>Anthropic</strong>
+              <span class="meta">适合 Review / Planning</span>
+            </span>
+          </button>
+          <button class="master-item" data-provider="openrouter">
+            <span class="bubble">🔵</span>
+            <span>
+              <strong>OpenRouter</strong>
+              <span class="meta">fallback hub / 模型聚合</span>
+            </span>
+          </button>
+          <button class="master-item" data-provider="custom">
+            <span class="bubble">➕</span>
+            <span>
+              <strong>新增自定义接口</strong>
+              <span class="meta">Base URL、Header、能力标签</span>
+            </span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="col detail">
+      <div class="detail-topbar">
+        <strong>模型与路由</strong>
+        <div class="actions">
+          <button class="btn secondary">测试连接</button>
+          <button class="btn primary">保存更改</button>
+        </div>
+      </div>
+
+      <div class="detail-header">
+        <small id="detail-kicker">Task Route</small>
+        <h3 id="detail-title">Build Plan</h3>
+        <p id="detail-description">把不同 Coding Plan 的默认模型、Provider、Reasoning 与 Fallback 分开配置，而不是所有任务都共用一个“默认模型”。</p>
+        <div class="badges">
+          <span class="badge success" id="badge-1">已连接</span>
+          <span class="badge info" id="badge-2">Coding Plan</span>
+          <span class="badge warning" id="badge-3">Fallback 已启用</span>
+        </div>
+      </div>
+
+      <div class="detail-scroll">
+        <section class="group">
+          <div class="group-head">
+            <h4>模型路由</h4>
+            <p>当前对象应该连哪家 Provider、用哪个模型，以及失败后如何切换。</p>
+          </div>
+          <div class="rows">
+            <div class="row">
+              <div class="row-label">
+                <strong>Provider Profile</strong>
+                <span>先选可复用的 Provider 配置，再由任务路由引用。</span>
+              </div>
+              <div>
+                <select class="select">
+                  <option>DMX API / Coding</option>
+                  <option>OpenAI Official</option>
+                  <option>Anthropic</option>
+                  <option>OpenRouter</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="row-label">
+                <strong>Model ID</strong>
+                <span>具体模型名称。</span>
+              </div>
+              <div>
+                <input class="input" value="gpt-5.4" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="row-label">
+                <strong>Fallback</strong>
+                <span>单独为这个任务路由指定回退链路。</span>
+              </div>
+              <div class="inline-grid">
+                <select class="select">
+                  <option>OpenRouter</option>
+                  <option>Anthropic</option>
+                  <option>不启用</option>
+                </select>
+                <input class="input" value="anthropic/claude-sonnet-4" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="group">
+          <div class="group-head">
+            <h4>执行策略</h4>
+            <p>Reasoning、审批、Busy Input、Tool Progress 都应是 route 级设置。</p>
+          </div>
+          <div class="rows">
+            <div class="row">
+              <div class="row-label">
+                <strong>Reasoning</strong>
+                <span>思考深度。</span>
+              </div>
+              <div class="token-row">
+                <span class="token">none</span>
+                <span class="token">low</span>
+                <span class="token active">medium</span>
+                <span class="token">high</span>
+                <span class="token">xhigh</span>
+              </div>
+            </div>
+            <div class="row">
+              <div class="row-label">
+                <strong>交互策略</strong>
+                <span>审批、打断与进度展示。</span>
+              </div>
+              <div class="inline-grid">
+                <select class="select">
+                  <option>manual</option>
+                  <option>smart</option>
+                  <option>off</option>
+                </select>
+                <select class="select">
+                  <option>interrupt</option>
+                  <option>queue</option>
+                </select>
+                <select class="select">
+                  <option>all</option>
+                  <option>new</option>
+                  <option>off</option>
+                </select>
+                <input class="input" value="90" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="group">
+          <div class="group-head">
+            <h4>System Overlay</h4>
+            <p>与这个对象绑定的默认策略，不把所有行为都塞进 SOUL.md。</p>
+          </div>
+          <div class="rows">
+            <div class="row">
+              <div class="row-label">
+                <strong>Prompt Policy</strong>
+                <span>默认执行倾向。</span>
+              </div>
+              <div>
+                <textarea class="textarea">收到编码任务后默认连续执行到结果；优先 patch、验证与明确 changed files；只在高风险操作时升级审批，不做低价值确认。</textarea>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="group">
+          <div class="group-head">
+            <h4>当前引用的 Provider</h4>
+            <p>这里只做简要查看；Provider 的完整配置应在 “Provider” 模式里维护。</p>
+          </div>
+          <div class="provider-cards">
+            <div class="provider-card featured">
+              <h5>DMX API / Coding</h5>
+              <p>自定义 OpenAI-compatible 接口。适合主对话、Build Plan 与 Compression。</p>
+              <div class="badges">
+                <span class="badge success">Connected</span>
+                <span class="badge info">Custom</span>
+              </div>
+            </div>
+            <div class="provider-card">
+              <h5>OpenRouter</h5>
+              <p>适合作为 fallback hub，补模型覆盖与弹性。</p>
+              <div class="badges">
+                <span class="badge warning">Fallback</span>
+              </div>
+            </div>
+            <div class="provider-card">
+              <h5>Anthropic</h5>
+              <p>更适合 Review / Planning / 长文本推理。</p>
+              <div class="badges">
+                <span class="badge info">Reference</span>
+              </div>
+            </div>
+          </div>
+          <div class="helper-box">
+            自定义接口不应该只是一个零散的 Base URL 输入框。更合理的结构是：
+            1. 先维护可复用的 Provider Profile；
+            2. 再让不同 Task Route 引用这些 Profile；
+            3. Fallback 也是 route 级，而不是全局默认模型的附属字段。
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const routeMeta = {
+      build: {
+        kicker: "Task Route",
+        title: "Build Plan",
+        desc: "把不同 Coding Plan 的默认模型、Provider、Reasoning 与 Fallback 分开配置，而不是所有任务都共用一个“默认模型”。",
+        badges: ["已连接", "Coding Plan", "Fallback 已启用"],
+      },
+      debug: {
+        kicker: "Task Route",
+        title: "Debug",
+        desc: "Debug 通常需要比 Build 更高的 reasoning，以及更适合日志分析和问题定位的默认策略。",
+        badges: ["已连接", "Debug Plan", "Fallback 待验证"],
+      },
+      review: {
+        kicker: "Task Route",
+        title: "Code Review",
+        desc: "Code Review 应强调风险发现、回归预警和测试缺口，适合与主对话分离的模型路线。",
+        badges: ["待确认", "Review Plan", "Fallback 已启用"],
+      },
+      planning: {
+        kicker: "Task Route",
+        title: "Planning",
+        desc: "Planning 更偏长文本推理和结构化输出，建议与执行型任务拆成不同路由。",
+        badges: ["已连接", "Planning", "Fallback 未设置"],
+      },
+      research: {
+        kicker: "Task Route",
+        title: "Deep Research",
+        desc: "Research 适合长文阅读、网页提取和背景归纳，通常需要与主对话不同的模型窗口和提供商。",
+        badges: ["待确认", "Research", "Fallback 已启用"],
+      },
+      aux: {
+        kicker: "Task Route",
+        title: "Auxiliary",
+        desc: "Vision、Compression、Delegate 等辅助能力不应混进单一默认模型配置里。",
+        badges: ["混合配置", "Auxiliary", "按能力拆分"],
+      },
+    };
+
+    const providerMeta = {
+      dmx: {
+        kicker: "Provider",
+        title: "DMX API / Coding",
+        desc: "自定义 OpenAI-compatible 接口。适合作为主对话与执行型任务的默认 Provider Profile。",
+        badges: ["已连接", "Custom", "主力接口"],
+      },
+      openai: {
+        kicker: "Provider",
+        title: "OpenAI Official",
+        desc: "官方 OpenAI 接口。适合需要稳定官方能力、项目级凭证或特定模型特性的场景。",
+        badges: ["可用", "Official", "Project 支持"],
+      },
+      anthropic: {
+        kicker: "Provider",
+        title: "Anthropic",
+        desc: "适合 Review / Planning / 长上下文推理等更偏结构化分析的任务。",
+        badges: ["待确认", "Official", "分析型"],
+      },
+      openrouter: {
+        kicker: "Provider",
+        title: "OpenRouter",
+        desc: "更适合作为模型聚合与 fallback hub，而不是所有任务都直接默认走它。",
+        badges: ["可用", "Hub", "Fallback"],
+      },
+      custom: {
+        kicker: "Provider",
+        title: "新增自定义接口",
+        desc: "录入 Base URL、Header、认证方式与能力标签，把它变成可复用的 Provider Profile。",
+        badges: ["新建", "Custom", "可复用"],
+      },
+    };
+
+    const segmentedButtons = document.querySelectorAll("[data-screen]");
+    const routeScreen = document.getElementById("screen-routes");
+    const providerScreen = document.getElementById("screen-providers");
+    const detailKicker = document.getElementById("detail-kicker");
+    const detailTitle = document.getElementById("detail-title");
+    const detailDescription = document.getElementById("detail-description");
+    const badge1 = document.getElementById("badge-1");
+    const badge2 = document.getElementById("badge-2");
+    const badge3 = document.getElementById("badge-3");
+
+    function paintDetail(meta) {
+      detailKicker.textContent = meta.kicker;
+      detailTitle.textContent = meta.title;
+      detailDescription.textContent = meta.desc;
+      badge1.textContent = meta.badges[0];
+      badge2.textContent = meta.badges[1];
+      badge3.textContent = meta.badges[2];
+    }
+
+    segmentedButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const screen = button.dataset.screen;
+        segmentedButtons.forEach((item) => item.classList.toggle("active", item === button));
+        routeScreen.classList.toggle("active", screen === "routes");
+        routeScreen.classList.toggle("hidden", screen !== "routes");
+        providerScreen.classList.toggle("active", screen === "providers");
+        providerScreen.classList.toggle("hidden", screen !== "providers");
+        paintDetail(screen === "routes" ? routeMeta.build : providerMeta.dmx);
+      });
+    });
+
+    document.querySelectorAll("[data-route]").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll("[data-route]").forEach((item) => item.classList.toggle("active", item === button));
+        paintDetail(routeMeta[button.dataset.route]);
+      });
+    });
+
+    document.querySelectorAll("[data-provider]").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll("[data-provider]").forEach((item) => item.classList.toggle("active", item === button));
+        paintDetail(providerMeta[button.dataset.provider]);
+      });
+    });
+  </script>
+</body>
+</html>

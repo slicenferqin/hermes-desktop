@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hermes Desktop</title>
+    <style>
+        /* ================= 设计系统与全局变量 ================= */
+        :root {
+            /* 颜色系统 - macOS Light Theme */
+            --bg-window: #FFFFFF;
+            --bg-sidebar: #F5F5F7;
+            --bg-sidebar-active: #E3E3E8;
+            --bg-hover: #F0F0F2;
+            --bg-input: #FFFFFF;
+            --bg-bubble-ai: #F4F4F5;
+            --bg-bubble-user: #007AFF;
+            
+            --text-primary: #1D1D1F;
+            --text-secondary: #86868B;
+            --text-user-bubble: #FFFFFF;
+            --text-error: #FF3B30;
+            
+            --border-light: #E5E5EA;
+            --border-input: #C6C6C8;
+            
+            --accent-blue: #007AFF;
+            --accent-blue-hover: #0056b3;
+            --accent-green: #34C759;
+            --accent-orange: #FF9500;
+            
+            /* 阴影与圆角 */
+            --shadow-window: 0 10px 40px rgba(0,0,0,0.15);
+            --shadow-btn: 0 1px 2px rgba(0,0,0,0.05);
+            --radius-window: 12px;
+            --radius-btn: 6px;
+            --radius-input: 6px;
+            --radius-bubble: 12px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #E8E8ED; /* 模拟 macOS 桌面背景色 */
+            color: var(--text-primary);
+            font-size: 14px;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* 模拟 macOS 窗口 */
+        .mac-window {
+            width: 1080px;
+            height: 720px;
+            background: var(--bg-window);
+            border-radius: var(--radius-window);
+            box-shadow: var(--shadow-window);
+            display: flex;
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        /* ================= 布局组件 ================= */
+        /* 一级侧边栏 */
+        .sidebar-main {
+            width: 72px;
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border-light);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 40px; /* 留出 macOS 红绿灯位置 */
+        }
+
+        .nav-item {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 11px;
+            transition: background 0.2s;
+        }
+        .nav-item svg { width: 22px; height: 22px; margin-bottom: 4px; }
+        .nav-item:hover { background-color: var(--bg-hover); }
+        .nav-item.active { background-color: var(--bg-sidebar-active); color: var(--accent-blue); }
+
+        /* 页面容器 */
+        .page-container {
+            flex: 1;
+            display: none;
+            background: var(--bg-window);
+        }
+        .page-container.active { display: flex; }
+
+        /* 通用二级侧边栏 (列表区) */
+        .sidebar-sub {
+            width: 240px;
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border-light);
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-sub-header {
+            height: 52px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 600;
+            border-bottom: 1px solid transparent;
+        }
+        .list-item {
+            padding: 10px 16px;
+            margin: 4px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .list-item:hover { background-color: var(--bg-hover); }
+        .list-item.active { background-color: var(--bg-sidebar-active); }
+        .list-item-title { font-size: 13px; font-weight: 500; }
+        .list-item-desc { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* 主内容区 */
+        .content-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        .content-header {
+            height: 52px;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--border-light);
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        /* ================= 基础控件 ================= */
+        .btn {
+            background: #FFFFFF; border: 1px solid var(--border-input); border-radius: var(--radius-btn);
+            padding: 4px 12px; font-size: 13px; cursor: pointer; color: var(--text-primary);
+            box-shadow: var(--shadow-btn);
+        }
+        .btn:active { background: #F2F2F2; }
+        .btn-primary { background: var(--accent-blue); color: #FFF; border: none; }
+        .btn-primary:active { background: var(--accent-blue-hover); }
+        
+        .input-text {
+            border: 1px solid var(--border-input); border-radius: var(--radius-input);
+            padding: 6px 10px; font-size: 13px; width: 100%; outline: none;
+        }
+        .input-text:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(0,122,255,0.2); }
+        
+        select.input-text { appearance: auto; background: #FFF; }
+
+        /* Toggle Switch */
+        .switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #E5E5EA; transition: .3s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        input:checked + .slider { background-color: var(--accent-green); }
+        input:checked + .slider:before { transform: translateX(16px); }
+
+        /* ================= 1. 对话页 ================= */
+        .chat-area { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+        .msg-row { display: flex; width: 100%; }
+        .msg-row.user { justify-content: flex-end; }
+        .msg-bubble { max-width: 70%; padding: 10px 14px; border-radius: var(--radius-bubble); line-height: 1.5; font-size: 14px; }
+        .msg-row.ai .msg-bubble { background: var(--bg-bubble-ai); border-top-left-radius: 4px; }
+        .msg-row.user .msg-bubble { background: var(--bg-bubble-user); color: var(--text-user-bubble); border-top-right-radius: 4px; }
+        
+        /* 过程型内容 (Thinking/Tool) */
+        .process-block {
+            font-size: 12px; color: var(--text-secondary); background: #EBEBEF;
+            padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; cursor: pointer;
+        }
+        .process-block details summary { outline: none; font-weight: 500; }
+        .process-block details[open] summary { margin-bottom: 6px; border-bottom: 1px solid #D1D1D6; padding-bottom: 4px; }
+        
+        /* Markdown 样式 */
+        .md-code { background: #1E1E1E; color: #D4D4D4; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 12px; margin: 8px 0; overflow-x: auto; }
+        .md-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13px; }
+        .md-table th, .md-table td { border: 1px solid #D1D1D6; padding: 6px 10px; text-align: left; }
+        .md-table th { background: #E5E5EA; }
+        .md-task-list { list-style: none; padding-left: 0; margin: 8px 0; }
+        .md-task-list li { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+
+        /* 输入区 */
+        .input-area { padding: 16px 24px 24px; background: var(--bg-window); border-top: 1px solid var(--border-light); }
+        .input-box { border: 1px solid var(--border-input); border-radius: 12px; padding: 12px; background: #FFF; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+        .input-box textarea { width: 100%; border: none; outline: none; resize: none; height: 40px; font-size: 14px; font-family: inherit; }
+        .input-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+        .status-line { font-size: 12px; color: var(--text-secondary); }
+        .status-error { color: var(--text-error); font-size: 12px; margin-top: 8px; display: flex; align-items: center; gap: 4px;}
+
+        /* ================= 2. 渠道页 & 3. 技能页 (列表详情结构) ================= */
+        .detail-pane { flex: 1; padding: 40px; max-width: 600px; }
+        .detail-title { font-size: 20px; font-weight: 600; margin-bottom: 24px; }
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 8px; color: var(--text-primary); }
+        .status-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; }
+        .status-badge.green { background: #E5F9E7; color: #248A3D; }
+        .status-badge.orange { background: #FFF0D4; color: #B25E02; }
+        .status-badge.gray { background: #F2F2F7; color: var(--text-secondary); }
+
+        /* 微信二维码弹层 */
+        .qr-container { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #F9F9F9; border: 1px solid var(--border-light); border-radius: 12px; padding: 30px; width: 240px; text-align: center; }
+        .qr-placeholder { width: 140px; height: 140px; background: #FFF; border: 1px solid #E5E5EA; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; }
+
+        /* ================= 4. 任务页 ================= */
+        .banner-warning { background: #FFF5E5; border-bottom: 1px solid #FFD699; color: #B25E02; padding: 10px 24px; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+        .task-list { padding: 24px; }
+        .task-item { display: flex; align-items: center; justify-content: space-between; padding: 16px; border: 1px solid var(--border-light); border-radius: 8px; margin-bottom: 12px; background: #FFF; }
+        .task-info { display: flex; flex-direction: column; gap: 4px; }
+        .task-name { font-weight: 500; font-size: 14px; }
+        .task-meta { font-size: 12px; color: var(--text-secondary); }
+
+        /* ================= 5. 设置页 (三栏偏好设置) ================= */
+        .settings-container { display: flex; width: 100%; height: 100%; }
+        .settings-cat { width: 160px; background: var(--bg-sidebar); border-right: 1px solid var(--border-light); padding: 12px 8px; }
+        .settings-sub { width: 180px; background: #FAFAFA; border-right: 1px solid var(--border-light); padding: 12px 8px; }
+        .settings-form { flex: 1; padding: 40px; overflow-y: auto; }
+        
+        .cat-item { padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-bottom: 4px; }
+        .cat-item.active { background: var(--accent-blue); color: #FFF; }
+        .sub-item { padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-bottom: 4px; }
+        .sub-item.active { background: var(--bg-sidebar-active); font-weight: 500; }
+
+    </style>
+</head>
+<body>
+
+<div class="mac-window">
+    <!-- 全局左侧导航 -->
+    <nav class="sidebar-main">
+        <div class="nav-item active" onclick="switchTab('chat', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            对话
+        </div>
+        <div class="nav-item" onclick="switchTab('channels', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16M4 18h.01"></path></svg>
+            渠道
+        </div>
+        <div class="nav-item" onclick="switchTab('skills', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            技能
+        </div>
+        <div class="nav-item" onclick="switchTab('tasks', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            任务
+        </div>
+        <div class="nav-item" onclick="switchTab('settings', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 
+2 0 0 1-2 2h-2a2 2 0 0 1-2-2v-.41a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2h.41a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v.41a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-.41a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            设置
+        </div>
+    </nav>
+
+    <!-- ================= 一、对话页 ================= -->
+    <div id="page-chat" class="page-container active">
+        <div class="sidebar-sub">
+            <div class="sidebar-sub-header">
+                会话列表
+                <button class="btn" style="padding: 2px 6px;">+</button>
+            </div>
+            <div style="overflow-y: auto; flex: 1; padding: 8px 0;">
+                <div class="list-item active">
+                    <span class="list-item-title">分析产品需求文档</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-item-title">帮忙写一段 Python 脚本</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-item-title">翻译并总结这篇长文</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-item-title">如何配置微信渠道？</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="content-main">
+            <div class="chat-area">
+                <!-- 消息：用户 -->
+                <div class="msg-row user">
+                    <div class="msg-bubble">帮我分析一下刚才发给你的产品需求文档，重点提取核心设计原则。</div>
+                </div>
+
+                <!-- 消息：AI (包含过程型内容和复杂 Markdown) -->
+                <div class="msg-row ai">
+                    <div style="display: flex; flex-direction: column; gap: 8px; max-width: 80%;">
+                        <!-- 过程型内容：Thinking -->
+                        <div class="process-block">
+                            <details>
+                                <summary>思考过程 (1.2s)</summary>
+                                正在读取文档内容... 识别到标题为《Hermes Desktop Page Requirements Reset》。<br>
+                                提取核心产品原则：Chat-first, Simple-first, 同屏操作, 状态安静。<br>
+                                准备格式化输出。
+                            </details>
+                        </div>
+                        
+                        <!-- 过程型内容：Tool use -->
+                        <div class="process-block">
+                            <details>
+                                <summary>调用工具: read_file</summary>
+                                <div class="md-code">{"file_id": "33928740ece74bf1b06caf5002464d01"}</div>
+                            </details>
+                        </div>
+
+                        <!-- 主回复内容 -->
+                        <div class="msg-bubble">
+                            根据文档，Hermes Desktop 的核心设计原则可以总结为以下几点：
+                            <br><br>
+                            <strong>1. 核心定位</strong>
+                            <ul class="md-task-list">
+                                <li><input type="checkbox" checked disabled> 桌面端 AI 客户端（非工作台/控制中心）</li>
+                                <li><input type="checkbox" checked disabled> 默认只展示当前任务需要的信息</li>
+                            </ul>
+                            <br>
+                            <strong>2. 交互原则</strong>
+                            <table class="md-table">
+                                <tr><th>原则</th><th>说明</th></tr>
+                                <tr><td>Chat-first</td><td>对话页必须把注意力留给会话本身</td></tr>
+                                <tr><td>Simple-first</td><td>默认配置只解决“尽快开始使用”</td></tr>
+                                <tr><td>同屏操作</td><td>当前对象与操作必须同屏，不跨区找表单</td></tr>
+                                <tr><td>安静状态</td><td>健康态保持安静，异常态才明显提示</td></tr>
+                            </table>
+                            <br>
+                            <strong>3. 视觉规范</strong>
+                            <div class="md-code">
+--bg-window: #FFFFFF;
+--accent-blue: #007AFF;
+/* 偏桌面客户端，轻边框、轻阴影 */
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 消息：用户触发错误 -->
+                <div class="msg-row user">
+                    <div class="msg-bubble">那帮我直接连一下微信渠道吧。</div>
+                </div>
+                
+                <!-- 消息：AI 错误态 -->
+                <div class="msg-row ai">
+                    <div class="msg-bubble" style="border: 1px solid #FFC1C0; background: #FFF0F0;">
+                        <span style="color: var(--text-error); font-weight: 500;">执行失败</span><br>
+                        <span style="font-size: 13px; color: #666;">微信渠道尚未配置凭证，无法直接连接。</span>
+                        <div style="margin-top: 8px;">
+                            <button class="btn" style="font-size: 12px;" onclick="switchTab('channels', document.querySelectorAll('.nav-item')[1])">去配置微信</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 输入区 -->
+            <div class="input-area">
+                <div class="input-box">
+                    <textarea placeholder="输入消息..."></textarea>
+                    <div class="input-actions">
+                        <div class="status-line">
+                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" style="vertical-align: middle; margin-right: 4px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                            Claude 3.5 Sonnet · 128k 上下文
+                        </div>
+                        <button class="btn btn-primary" style="padding: 4px 16px;">发送</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= 二、渠道页 ================= -->
+    <div id="page-channels" class="page-container">
+        <div class="sidebar-sub">
+            <div class="sidebar-sub-header">渠道管理</div>
+            <div style="overflow-y: auto; flex: 1; padding: 8px 0;">
+                <div class="list-item active" onclick="switchChannel('wechat')">
+                    <span class="list-item-title">微信</span>
+                    <span class="list-item-desc"><span class="status-badge orange" style="padding: 0 4px; font-size: 10px; margin-right: 4px;">待扫码</span>需要补充凭证</span>
+                </div>
+                <div class="list-item" onclick="switchChannel('telegram')">
+                    <span class="list-item-title">Telegram</span>
+                    <span class="list-item-desc"><span class="status-badge green" style="padding: 0 4px; font-size: 10px; margin-right: 4px;">已连接</span>默认投递对象</span>
+                </div>
+                <div class="list-item" onclick="switchChannel('slack')">
+                    <span class="list-item-title">Slack</span>
+                    <span class="list-item-desc"><span class="status-badge gray" style="padding: 0 4px; font-size: 10px; margin-right: 4px;">未配置</span>点击接入</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 微信详情 (待扫码态) -->
+        <div class="content-main" id="channel-wechat">
+            <div class="content-header">微信</div>
+            <div class="detail-pane">
+                <div class="detail-title">接入微信</div>
+                <p style="color: var(--text-secondary); margin-bottom: 24px;">通过扫码将 Hermes 接入你的微信账号，支持接收消息与投递任务。</p>
+                
+                <div class="qr-container">
+                    <div class="qr-placeholder">
+                        <svg viewBox="0 0 24 24" width="48" height="48" stroke="#C6C6C8" stroke-width="1.5" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M8 12h8M12 8v8"></path></svg>
+                    </div>
+                    <div style="font-weight: 500; margin-bottom: 8px;">请使用微信扫码登录</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">二维码有效时间: 02:59</div>
+                </div>
+
+                <div style="margin-top: 40px; border-top: 1px solid var(--border-light); padding-top: 24px;">
+                    <details style="font-size: 13px;">
+                        <summary style="cursor: pointer; color: var(--text-secondary); outline: none;">高级设置 (环境变量与备份)</summary>
+                        <div style="margin-top: 16px; background: #F5F5F7; padding: 16px; border-radius: 8px;">
+                            <div class="form-group">
+                                <label class="form-label">WECHAT_PUPPET</label>
+                                <input type="text" class="input-text" value="wechaty-puppet-padlocal" disabled>
+                            </div>
+                            <button class="btn">恢复备份</button>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= 三、技能页 ================= -->
+    <div id="page-skills" class="page-container">
+        <div class="sidebar-sub">
+            <div class="sidebar-sub-header">
+                可用技能
+                <button class="btn" style="padding: 2px 6px;">安装</button>
+            </div>
+            <div style="padding: 8px 16px;">
+                <input type="text" class="input-text" placeholder="搜索技能...">
+            </div>
+            <div style="overflow-y: auto; flex: 1; padding: 0 0 8px 0;">
+                <div class="list-item active">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="list-item-title">Web Search</span>
+                        <label class="switch" style="transform: scale(0.7);"><input type="checkbox" checked><span class="slider"></span></label>
+                    </div>
+                    <span class="list-item-desc">联网搜索并提取网页内容</span>
+                </div>
+                <div class="list-item">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="list-item-title">Python Interpreter</span>
+                        <label class="switch" style="transform: scale(0.7);"><input type="checkbox" checked><span class="slider"></span></label>
+                    </div>
+                    <span class="list-item-desc">在本地沙箱执行 Python 代码</span>
+                </div>
+                <div class="list-item">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="list-item-title">Notion Sync</span>
+                        <label class="switch" style="transform: scale(0.7);"><input type="checkbox"><span class="slider"></span></label>
+                    </div>
+                    <span class="list-item-desc">读取或写入 Notion Database</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="content-main">
+            <div class="content-header">Web Search</div>
+            <div class="detail-pane">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+                    <div>
+                        <div class="detail-title" style="margin-bottom: 8px;">Web Search</div>
+                        <div style="color: var(--text-secondary); font-size: 14px;">联网搜索并提取网页内容，支持 Google 与 Bing 引擎。</div>
+                    </div>
+                    <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">来源</label>
+                    <div style="font-size: 13px;">官方内置</div>
+                </div>
+                
+                <div style="margin-top: 40px; border-top: 1px solid var(--border-light); padding-top: 24px;">
+                    <details style="font-size: 13px;" open>
+                        <summary style="cursor: pointer; color: var(--text-secondary); outline: none;">二级信息</summary>
+                        <div style="margin-top: 16px; display: grid; grid-template-columns: 100px 1fr; gap: 12px; font-size: 13px;">
+                            <div style="color: var(--text-secondary)">版本</div><div>v1.2.0</div>
+                            <div style="color: var(--text-secondary)">分类</div><div>工具 / 搜索</div>
+                            <div style="color: var(--text-secondary)">位置</div><div style="font-family: monospace;">/plugins/web-search</div>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= 四、任务页 ================= -->
+    <div id="page-tasks" class="page-container">
+        <div class="content-main" style="background: #FAFAFA;">
+            <!-- 调度器未运行警告 (克制) -->
+            <div class="banner-warning">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                调度器当前未运行，定时任务将不会触发。
+                <button class="btn" style="margin-left: auto; padding: 2px 8px; font-size: 12px;">启动调度器</button>
+            </div>
+
+            <div class="content-header" style="justify-content: space-between; background: var(--bg-window);">
+                定时任务
+                <button class="btn btn-primary" onclick="toggleTaskForm()">新建任务</button>
+            </div>
+
+            <!-- 任务列表态 -->
+            <div class="task-list" id="task-list-view">
+                <div class="task-item">
+                    <div class="task-info">
+                        <div class="task-name">每日早报推送</div>
+                        <div class="task-meta">每天 08:00 执行 · 投递至 Telegram</div>
+                        <div class="task-meta" style="color: var(--accent-green); margin-top: 4px;">上次执行: 今天 08:00 (成功)</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <span style="font-size: 12px; color: var(--text-secondary);">下次: 明天 08:00</span>
+                        <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <div class="task-info">
+                        <div class="task-name">清理临时文件</div>
+                        <div class="task-meta">每周五 23:00 执行 · 本地执行</div>
+                        <div class="task-meta" style="margin-top: 4px;">上次执行: 3天前 (成功)</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <span style="font-size: 12px; color: var(--text-secondary);">下次: 2天后 23:00</span>
+                        <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 新建任务表单 (默认隐藏) -->
+            <div class="detail-pane" id="task-form-view" style="display: none; background: var(--bg-window); margin: 24px; border-radius: 12px; border: 1px solid var(--border-light); padding: 32px;">
+                <div class="detail-title">新建任务</div>
+                <div class="form-group">
+                    <label class="form-label">任务名称</label>
+                    <input type="text" class="input-text" placeholder="例如：每日早报推送">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">执行内容 (Prompt)</label>
+                    <textarea class="input-text" style="height: 80px; resize: none;" placeholder="告诉 Hermes 需要做什么..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">调度方式</label>
+                    <select class="input-text">
+                        <option>每天</option>
+                        <option>每周</option>
+                        <option>工作日</option>
+                        <option>自定义 Cron</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">投递位置</label>
+                    <select class="input-text">
+                        <option>不投递 (仅后台执行)</option>
+                        <option>Telegram</option>
+                        <option>微信</option>
+                    </select>
+                </div>
+                <div style="margin-top: 32px; display: flex; gap: 12px;">
+                    <button class="btn btn-primary" onclick="toggleTaskForm()">保存</button>
+                    <button class="btn" onclick="toggleTaskForm()">取消</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= 五、设置页 (模型设置) ================= -->
+    <div id="page-settings" class="page-container">
+        <div class="settings-container">
+            <!-- 第一栏：分类 -->
+            <div class="settings-cat">
+                <div class="cat-item">通用</div>
+                <div class="cat-item">助手</div>
+                <div class="cat-item active">模型</div>
+                <div class="cat-item">语音与记忆</div>
+                <div class="cat-item">高级</div>
+            </div>
+            
+            <!-- 第二栏：模型分段 -->
+            <div class="settings-sub">
+                <div style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin: 8px 12px 12px; text-transform: uppercase;">模型设置</div>
+                <div class="sub-item active" onclick="switchModelSection('basic', this)">基础</div>
+                <div class="sub-item" onclick="switchModelSection('advanced', this)">高级</div>
+                <div class="sub-item" onclick="switchModelSection('provider', this)">Provider</div>
+            </div>
+
+            <!-- 第三栏：表单区 -->
+            <div class="settings-form" id="model-basic">
+                <div class="detail-title">主模型配置</div>
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 24px;">选择并配置 Hermes 默认使用的语言模型。</p>
+
+                <div class="form-group">
+                    <label class="form-label">Provider 类型</label>
+                    <select class="input-text">
+                        <option>OpenAI 兼容接口</option>
+                        <option>Anthropic</option>
+                        <option>Ollama (本地)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Base URL</label>
+                    <input type="text" class="input-text" value="https://api.openai.com/v1">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">API Key</label>
+                    <input type="password" class="input-text" value="sk-xxxxxxxxxxxxxxxxxxxx">
+                </div>
+
+                <div class="form-group" style="display: flex; gap: 12px; align-items: flex-end;">
+                    <div style="flex: 1;">
+                        <label class="form-label">主模型</label>
+                        <select class="input-text">
+                            <option>gpt-4o</option>
+                            <option>gpt-4-turbo</option>
+                            <option>gpt-3.5-turbo</option>
+                        </select>
+                    </div>
+                    <button class="btn">自动获取模型</button>
+                </div>
+
+                <div style="margin-top: 32px; display: flex; gap: 12px; align-items: center;">
+                    <button class="btn btn-primary">保存</button>
+                    <button class="btn">测试连接</button>
+                    <span style="font-size: 13px; color: var(--accent-green); display: flex; align-items: center; gap: 4px; margin-left: 8px;">
+                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        连接成功
+                    </span>
+                </div>
+            </div>
+
+            <div class="settings-form" id="model-advanced" style="display: none;">
+                <div class="detail-title">高级配置</div>
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 24px;">为特定任务指定辅助模型，提升执行效率或降低成本。</p>
+
+                <div class="form-group">
+                    <label class="form-label">压缩模型 (Summarization)</label>
+                    <select class="input-text"><option>gpt-3.5-turbo</option></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">辅助任务模型 (Tool calling)</label>
+                    <select class="input-text"><option>gpt-4o-mini</option></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">回退策略 (Fallback)</label>
+                    <select class="input-text"><option>无 (失败时直接报错)</option></select>
+                </div>
+            </div>
+
+            <div class="settings-form" id="model-provider" style="display: none;">
+                <div class="detail-title">自定义 Provider</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <p style="font-size: 13px; color: var(--text-secondary);">管理多个模型接口配置。</p>
+                    <button class="btn" style="padding: 2px 8px;">+ 新建接口</button>
+                </div>
+
+                <div style="border: 1px solid var(--border-light); border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; font-weight: 500; margin-bottom: 12px;">
+                        <span>默认 OpenAI</span>
+                        <span class="status-badge gray">主接口</span>
+                    </div>
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">类型: OpenAI 兼容</div>
+                    <div style="font-size: 13px; color: var(--text-secondary);">已探测模型: 12 个</div>
+                </div>
+
+                <div style="border: 1px solid var(--border-light); border-radius: 8px; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; font-weight: 500; margin-bottom: 12px;">
+                        <span>本地 Ollama</span>
+                    </div>
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">类型: Ollama</div>
+                    <div style="font-size: 13px; color: var(--text-secondary);">URL: http://localhost:11434</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // 顶层页面切换
+    function switchTab(tabId, el) {
+        document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('page-' + tabId).classList.add('active');
+        el.classList.add('active');
+    }
+
+    // 模型设置内部分段切换
+    function switchModelSection(sectionId, el) {
+        document.getElementById('model-basic').style.display = 'none';
+        document.getElementById('model-advanced').style.display = 'none';
+        document.getElementById('model-provider').style.display = 'none';
+        
+        document.querySelectorAll('.sub-item').forEach(n => n.classList.remove('active'));
+        
+        document.getElementById('model-' + sectionId).style.display = 'block';
+        el.classList.add('active');
+    }
+
+    // 任务页表单切换
+    function toggleTaskForm() {
+        const list = document.getElementById('task-list-view');
+        const form = document.getElementById('task-form-view');
+        if (list.style.display === 'none') {
+            list.style.display = 'block';
+            form.style.display = 'none';
+        } else {
+            list.style.display = 'none';
+            form.style.display = 'block';
+        }
+    }
+</script>
+
+</body>
+</html>
